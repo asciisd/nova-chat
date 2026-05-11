@@ -82,7 +82,9 @@ return new class extends Migration
 };
 ```
 
-**Why `is_from_admin` is required and not derived:** the sidebar's unread badge runs a hot query (`where('is_from_admin', false)->whereNull('read_at')->count()`). A polymorphic `whereHasMorph(...)` join is roughly 10× more expensive at scale. The denormalized column + composite index lets unread counts stay O(log n).
+**Why `is_from_admin` is a stored column (not derived per-query):** the sidebar's unread badge runs a hot query (`where('is_from_admin', false)->whereNull('read_at')->count()`). A polymorphic `whereHasMorph(...)` join is roughly 10× more expensive at scale. The denormalized column + composite index lets unread counts stay O(log n).
+
+**You don't manually set `is_from_admin` at insertion time** — the `AsChatMessage` trait fills it from `$author->isChatAdmin()` on the `creating` event whenever the developer didn't include the attribute in the assignment. An explicit value (e.g. `is_from_admin => true` in `->create([...])`) is always respected. Cost: one extra `SELECT` against the author table per insert.
 
 If you want a one-shot template, publish the package stub instead:
 

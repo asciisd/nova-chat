@@ -87,6 +87,26 @@ class SignalMessage extends Model implements ChatMessage
 }
 ```
 
+#### `is_from_admin` is auto-derived
+
+You do **not** need to set `is_from_admin` yourself when inserting messages — the `AsChatMessage` trait fills it from the author at insert time:
+
+```php
+// From admin Nova UI (the package's own POST endpoint does this):
+$signal->chatMessages()->create([
+    'author_type' => $admin->getMorphClass(), 'author_id' => $admin->id,
+    'body' => 'reply', 'is_from_admin' => true,   // explicit — kept
+]);
+
+// From your custom user-side endpoint:
+$signal->chatMessages()->create([
+    'author_type' => $user->getMorphClass(), 'author_id' => $user->id,
+    'body' => 'question',                          // no is_from_admin → derived from $user->isChatAdmin()
+]);
+```
+
+The trait only auto-derives when `is_from_admin` is **not** in the assigned attributes, so any value you explicitly pass is kept. Cost: one extra `SELECT` against the author table per `creating` event.
+
 #### Required columns on your message table
 
 | Column                       | Type                  | Notes                                                |
