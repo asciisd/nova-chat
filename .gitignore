@@ -1,0 +1,10 @@
+/vendor/
+/node_modules/
+/dist/
+/.idea/
+/.vscode/
+/.phpunit.cache/
+composer.lock
+package-lock.json
+.DS_Store
+.phpunit.result.cache
