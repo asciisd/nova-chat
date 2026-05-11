@@ -77,19 +77,59 @@ onMounted(() => {
 </script>
 
 <style>
+/*
+ * Theme tokens — single source of truth. light-dark() resolves based on the
+ * cascaded color-scheme, so values flip when Nova toggles dark mode (.dark
+ * class) or when the user's OS prefers dark and Nova is on auto.
+ */
 .nova-chat-root {
+    color-scheme: light dark;
+
+    /* surfaces */
+    --nc-bg-app:          light-dark(#f9fafb, #0f172a);
+    --nc-bg-surface:      light-dark(#ffffff, #1e293b);
+    --nc-bg-input:        light-dark(#f9fafb, #0f172a);
+    --nc-bg-hover:        light-dark(#f9fafb, #233044);
+    --nc-bg-active:       light-dark(#eff6ff, rgba(59, 130, 246, 0.18));
+    --nc-bg-bubble-other: light-dark(#f3f4f6, #334155);
+    --nc-bg-badge:        light-dark(#e5e7eb, #334155);
+    --nc-bg-tab:          light-dark(#f3f4f6, #334155);
+
+    /* borders */
+    --nc-border:          light-dark(#e5e7eb, #334155);
+    --nc-border-soft:     light-dark(#f3f4f6, #1e293b);
+
+    /* text */
+    --nc-text-primary:    light-dark(#111827, #f1f5f9);
+    --nc-text-secondary:  light-dark(#374151, #cbd5e1);
+    --nc-text-muted:      light-dark(#6b7280, #94a3b8);
+    --nc-text-faint:      light-dark(#9ca3af, #64748b);
+    --nc-text-on-badge:   light-dark(#1f2937, #e2e8f0);
+    --nc-text-on-accent:  #ffffff;
+
+    /* accents */
+    --nc-accent:          #3b82f6;
+    --nc-accent-strong:   #2563eb;
+    --nc-danger:          #ef4444;
+    --nc-disabled:        light-dark(#d1d5db, #475569);
+
     display: flex;
     flex-direction: column;
     height: calc(100vh - 6rem);
-    background: var(--color-gray-50, #f9fafb);
+    background: var(--nc-bg-app);
+    color: var(--nc-text-primary);
     border-radius: 0.5rem;
     overflow: hidden;
 }
 
+/* Honor Nova / Tailwind explicit theme toggles regardless of OS preference. */
+:where(.dark, [data-theme='dark']) .nova-chat-root { color-scheme: dark; }
+:where(.light, [data-theme='light']) .nova-chat-root { color-scheme: light; }
+
 .nova-chat-header {
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--color-gray-200, #e5e7eb);
-    background: #fff;
+    border-bottom: 1px solid var(--nc-border);
+    background: var(--nc-bg-surface);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -101,6 +141,7 @@ onMounted(() => {
     font-size: 1.125rem;
     font-weight: 600;
     margin: 0;
+    color: var(--nc-text-primary);
 }
 
 .nova-chat-loading,
@@ -111,7 +152,7 @@ onMounted(() => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: var(--color-gray-500, #6b7280);
+    color: var(--nc-text-muted);
     padding: 2rem;
     text-align: center;
 }
@@ -122,7 +163,8 @@ onMounted(() => {
 }
 
 .nova-chat-empty-hint code {
-    background: var(--color-gray-100, #f3f4f6);
+    background: var(--nc-bg-bubble-other);
+    color: var(--nc-text-primary);
     padding: 0.125rem 0.375rem;
     border-radius: 0.25rem;
     font-size: 0.8125rem;
@@ -133,7 +175,7 @@ onMounted(() => {
     min-height: 0;
     display: grid;
     grid-template-columns: minmax(280px, 360px) 1fr;
-    background: #fff;
+    background: var(--nc-bg-surface);
 }
 
 @media (max-width: 768px) {

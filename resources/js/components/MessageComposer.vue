@@ -60,48 +60,58 @@ async function send() {
 
 <style>
 .nova-chat-composer {
-    border-top: 1px solid var(--color-gray-200, #e5e7eb);
+    border-top: 1px solid var(--nc-border);
     padding: 0.75rem;
     display: flex;
     gap: 0.5rem;
     align-items: flex-end;
-    background: #fff;
+    background: var(--nc-bg-surface);
 }
 
 .nova-chat-composer textarea {
     flex: 1;
     resize: none;
-    border: 1px solid var(--color-gray-200, #e5e7eb);
+    border: 1px solid var(--nc-border);
     border-radius: 0.5rem;
     padding: 0.5rem 0.75rem;
     font-size: 0.9rem;
     font-family: inherit;
     line-height: 1.4;
-    background: var(--color-gray-50, #f9fafb);
+    background: var(--nc-bg-input);
+    color: var(--nc-text-primary);
     min-height: 2.5rem;
     max-height: 10rem;
 }
 
+.nova-chat-composer textarea::placeholder {
+    color: var(--nc-text-faint);
+}
+
 .nova-chat-composer textarea:focus {
     outline: none;
-    border-color: var(--color-blue-500, #3b82f6);
-    background: #fff;
+    border-color: var(--nc-accent);
+    background: var(--nc-bg-surface);
 }
 
 .nova-chat-composer button {
     padding: 0.5rem 1rem;
-    background: var(--color-blue-500, #3b82f6);
-    color: #fff;
+    background: var(--nc-accent);
+    color: var(--nc-text-on-accent);
     border: none;
     border-radius: 0.5rem;
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
     min-width: 4rem;
+    transition: background-color 120ms ease;
+}
+
+.nova-chat-composer button:hover:not(:disabled) {
+    background: var(--nc-accent-strong);
 }
 
 .nova-chat-composer button:disabled {
-    background: var(--color-gray-300, #d1d5db);
+    background: var(--nc-disabled);
     cursor: not-allowed;
 }
 </style>

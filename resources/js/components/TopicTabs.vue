@@ -36,22 +36,27 @@ defineEmits(['change'])
     gap: 0.5rem;
     padding: 0.4rem 0.75rem;
     border-radius: 9999px;
-    background: var(--color-gray-100, #f3f4f6);
-    color: var(--color-gray-700, #374151);
+    background: var(--nc-bg-tab);
+    color: var(--nc-text-secondary);
     font-size: 0.8125rem;
     font-weight: 500;
     border: none;
     cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+.nova-chat-tab:hover {
+    background: var(--nc-bg-hover);
 }
 
 .nova-chat-tab.is-active {
-    background: var(--color-blue-500, #3b82f6);
-    color: #fff;
+    background: var(--nc-accent);
+    color: var(--nc-text-on-accent);
 }
 
 .nova-chat-tab-badge {
-    background: var(--color-red-500, #ef4444);
-    color: #fff;
+    background: var(--nc-danger);
+    color: var(--nc-text-on-accent);
     border-radius: 9999px;
     padding: 0 0.4rem;
     font-size: 0.6875rem;

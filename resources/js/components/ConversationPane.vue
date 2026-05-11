@@ -140,38 +140,38 @@ onBeforeUnmount(() => {
     display: flex;
     flex-direction: column;
     min-height: 0;
-    background: #fff;
+    background: var(--nc-bg-surface);
 }
 
 .nova-chat-pane-header {
     padding: 0.75rem 1.25rem;
-    border-bottom: 1px solid var(--color-gray-200, #e5e7eb);
+    border-bottom: 1px solid var(--nc-border);
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 0.75rem;
-    background: var(--color-gray-50, #f9fafb);
+    background: var(--nc-bg-app);
 }
 
 .nova-chat-pane-title {
     margin: 0;
     font-size: 0.9375rem;
     font-weight: 600;
-    color: var(--color-gray-900, #111827);
+    color: var(--nc-text-primary);
 }
 
 .nova-chat-pane-subtitle {
     margin: 0.125rem 0 0;
     font-size: 0.75rem;
-    color: var(--color-gray-500, #6b7280);
+    color: var(--nc-text-muted);
 }
 
 .nova-chat-pane-badge {
     font-size: 0.6875rem;
     padding: 0.125rem 0.5rem;
     border-radius: 9999px;
-    background: var(--color-gray-200, #e5e7eb);
-    color: var(--color-gray-800, #1f2937);
+    background: var(--nc-bg-badge);
+    color: var(--nc-text-on-badge);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -181,7 +181,7 @@ onBeforeUnmount(() => {
     min-height: 0;
     overflow-y: auto;
     padding: 1rem 1.25rem;
-    background: var(--color-gray-50, #f9fafb);
+    background: var(--nc-bg-app);
 }
 
 .nova-chat-pane-empty {
@@ -189,7 +189,7 @@ onBeforeUnmount(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--color-gray-500, #6b7280);
+    color: var(--nc-text-muted);
     font-size: 0.875rem;
 }
 </style>

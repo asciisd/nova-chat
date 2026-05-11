@@ -35,14 +35,14 @@ defineProps({
     max-width: 70%;
     padding: 0.625rem 0.875rem;
     border-radius: 0.875rem;
-    background: var(--color-gray-100, #f3f4f6);
-    color: var(--color-gray-900, #111827);
+    background: var(--nc-bg-bubble-other);
+    color: var(--nc-text-primary);
     border-top-left-radius: 0.25rem;
 }
 
 .nova-chat-bubble-row.is-admin .nova-chat-bubble {
-    background: var(--color-blue-500, #3b82f6);
-    color: #fff;
+    background: var(--nc-accent);
+    color: var(--nc-text-on-accent);
     border-top-left-radius: 0.875rem;
     border-top-right-radius: 0.25rem;
 }

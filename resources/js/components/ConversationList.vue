@@ -115,25 +115,35 @@ onBeforeUnmount(() => {
 
 <style>
 .nova-chat-list {
-    border-right: 1px solid var(--color-gray-200, #e5e7eb);
+    border-right: 1px solid var(--nc-border);
     display: flex;
     flex-direction: column;
     min-height: 0;
-    background: #fff;
+    background: var(--nc-bg-surface);
 }
 
 .nova-chat-list-search {
     padding: 0.75rem;
-    border-bottom: 1px solid var(--color-gray-200, #e5e7eb);
+    border-bottom: 1px solid var(--nc-border);
 }
 
 .nova-chat-list-search input {
     width: 100%;
     padding: 0.5rem 0.75rem;
     border-radius: 0.375rem;
-    border: 1px solid var(--color-gray-200, #e5e7eb);
-    background: var(--color-gray-50, #f9fafb);
+    border: 1px solid var(--nc-border);
+    background: var(--nc-bg-input);
+    color: var(--nc-text-primary);
     font-size: 0.875rem;
+}
+
+.nova-chat-list-search input::placeholder {
+    color: var(--nc-text-faint);
+}
+
+.nova-chat-list-search input:focus {
+    outline: none;
+    border-color: var(--nc-accent);
 }
 
 .nova-chat-list-items {
@@ -147,22 +157,22 @@ onBeforeUnmount(() => {
 .nova-chat-list-empty {
     padding: 1.5rem;
     text-align: center;
-    color: var(--color-gray-500, #6b7280);
+    color: var(--nc-text-muted);
     font-size: 0.875rem;
 }
 
 .nova-chat-list-row {
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--color-gray-100, #f3f4f6);
+    border-bottom: 1px solid var(--nc-border-soft);
     cursor: pointer;
 }
 
 .nova-chat-list-row:hover {
-    background: var(--color-gray-50, #f9fafb);
+    background: var(--nc-bg-hover);
 }
 
 .nova-chat-list-row.is-active {
-    background: var(--color-blue-50, #eff6ff);
+    background: var(--nc-bg-active);
 }
 
 .nova-chat-list-row-top,
@@ -176,7 +186,7 @@ onBeforeUnmount(() => {
 
 .nova-chat-list-row-title {
     font-weight: 600;
-    color: var(--color-gray-900, #111827);
+    color: var(--nc-text-primary);
     font-size: 0.9375rem;
     white-space: nowrap;
     overflow: hidden;
@@ -184,14 +194,14 @@ onBeforeUnmount(() => {
 }
 
 .nova-chat-list-row-time {
-    color: var(--color-gray-500, #6b7280);
+    color: var(--nc-text-muted);
     font-size: 0.75rem;
     white-space: nowrap;
     flex-shrink: 0;
 }
 
 .nova-chat-list-row-subtitle {
-    color: var(--color-gray-600, #4b5563);
+    color: var(--nc-text-secondary);
     font-size: 0.8125rem;
 }
 
@@ -199,12 +209,12 @@ onBeforeUnmount(() => {
     font-size: 0.6875rem;
     padding: 0.1rem 0.5rem;
     border-radius: 9999px;
-    background: var(--color-gray-200, #e5e7eb);
-    color: var(--color-gray-800, #1f2937);
+    background: var(--nc-bg-badge);
+    color: var(--nc-text-on-badge);
 }
 
 .nova-chat-list-row-preview {
-    color: var(--color-gray-600, #4b5563);
+    color: var(--nc-text-secondary);
     font-size: 0.8125rem;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -214,18 +224,18 @@ onBeforeUnmount(() => {
 }
 
 .nova-chat-list-row-preview-prefix {
-    color: var(--color-gray-400, #9ca3af);
+    color: var(--nc-text-faint);
     margin-right: 0.25rem;
 }
 
 .nova-chat-list-row.is-unread .nova-chat-list-row-preview {
-    color: var(--color-gray-900, #111827);
+    color: var(--nc-text-primary);
     font-weight: 500;
 }
 
 .nova-chat-list-row-unread {
-    background: var(--color-blue-500, #3b82f6);
-    color: #fff;
+    background: var(--nc-accent);
+    color: var(--nc-text-on-accent);
     border-radius: 9999px;
     padding: 0 0.45rem;
     font-size: 0.6875rem;
