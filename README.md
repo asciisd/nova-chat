@@ -1,5 +1,10 @@
 # asciisd/nova-chat
 
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/asciisd/nova-chat.svg?style=flat-square)](https://packagist.org/packages/asciisd/nova-chat)
+[![Total Downloads](https://img.shields.io/packagist/dt/asciisd/nova-chat.svg?style=flat-square)](https://packagist.org/packages/asciisd/nova-chat)
+[![PHP Version](https://img.shields.io/packagist/php-v/asciisd/nova-chat.svg?style=flat-square)](https://packagist.org/packages/asciisd/nova-chat)
+[![License](https://img.shields.io/packagist/l/asciisd/nova-chat.svg?style=flat-square)](LICENSE)
+
 A reusable, contract-driven WhatsApp-style chat tool for Laravel Nova.
 
 The package never assumes a single shared `chat_messages` table. Each project plugs in its own host model (a "topic"), its own message model, and its own author models. Everything connects through three small interfaces.
