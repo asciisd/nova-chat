@@ -1,6 +1,5 @@
 /vendor/
 /node_modules/
-/dist/
 /.idea/
 /.vscode/
 /.phpunit.cache/
@@ -8,3 +7,8 @@ composer.lock
 package-lock.json
 .DS_Store
 .phpunit.result.cache
+
+# NOTE: /dist/ is intentionally NOT ignored. The compiled Vue bundle
+# (dist/js/tool.js + tool.css) is what Nova::script / Nova::style
+# load at runtime in consuming apps, so it must ship in the tagged
+# release. Rebuild with `npm run build` before tagging.
