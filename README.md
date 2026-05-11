@@ -160,6 +160,15 @@ All routes live under `/nova-vendor/nova-chat/` and are protected by Nova's API 
 | POST   | `/topics/{topic}/conversations/{id}/messages`   |
 | POST   | `/topics/{topic}/conversations/{id}/read`       |
 
+## Laravel Boost integration
+
+This package ships AI guidelines and skills for [Laravel Boost](https://laravel.com/docs/13.x/boost):
+
+- `resources/boost/guidelines/nova-chat.md` — high-level conventions, always loaded when Boost detects the package.
+- `resources/boost/skills/nova-chat-development/SKILL.md` — on-demand integration playbook (six-step walkthrough for adding a new Chattable host, troubleshooting matrix, API contract).
+
+Run `php artisan boost:install` (or `boost:update --discover` after `composer require`) to publish them into the consuming app.
+
 ## v1 caveats
 
 - **Polling only.** No Reverb/Pusher. Default cadence: sidebar 4 s, thread 3 s. Polling pauses while the tab is hidden.
