@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Earlier history (`v0.1.x`) is reconstructed from git tags and commits.
 
+## [1.0.2] — 2026-05-12
+
+### Changed
+
+- Broadened Nova compatibility: `composer.json` now requires
+  `laravel/nova: ^4.0|^5.0` (was `^5.0`). The package's contracts and
+  wire format don't depend on Nova 5-only APIs, so existing Nova 4 hosts
+  can now `composer require asciisd/nova-chat` without forcing a Nova
+  major bump.
+- Tightened `minimum-stability` from `dev` to `stable` so consumers no
+  longer pull dev dependencies transitively from this package.
+
+### Docs
+
+- Wired the `docs/screenshots/` images (sidebar/thread, per-message
+  actions menu, sidebar search) into the README and the v1.0.0
+  changelog entry so Packagist and GitHub render the UI inline.
+
 ## [1.0.1] — 2026-05-12
 
 ### Fixed
