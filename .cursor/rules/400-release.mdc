@@ -1,0 +1,23 @@
+---
+description: Use this rule when the user asks to release, tag, publish, or ship a new version of asciisd/nova-chat. It points at the release playbook in .ai/skills/release-new-version/SKILL.md.
+alwaysApply: false
+---
+
+When the user says "release", "tag", "publish version", or asks to ship
+recent work, read the full playbook in
+`.ai/skills/release-new-version/SKILL.md` and follow it end-to-end.
+
+## The non-obvious bits to not forget
+
+- `composer.json` does **not** carry a `version` field — the git tag is
+  the source of truth.
+- `dist/js/tool.js` and `dist/js/tool.css` are committed on purpose;
+  rebuild and stage them in the same commit as the source change before
+  tagging.
+- Public surface for SemVer purposes: contracts in `src/Contracts/`,
+  JSON resources in `src/Http/Resources/`, route paths in
+  `routes/api.php`, config keys in `config/nova-chat.php`, and the
+  migration stub in `database/stubs/`. Anything else is internal.
+- After tagging, confirm Packagist picked up the new version at
+  `https://packagist.org/packages/asciisd/nova-chat` (or click
+  **Update** there).

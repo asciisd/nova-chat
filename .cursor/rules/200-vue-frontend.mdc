@@ -1,0 +1,34 @@
+---
+description: Frontend rules for the package's Vue UI. Auto-attached when editing files under resources/js/ or vite.config.js.
+globs: resources/js/**/*.{vue,js,ts},vite.config.js
+alwaysApply: false
+---
+
+Read the full conventions in `.ai/guidelines/frontend-workflow.md` and
+the playbook in `.ai/skills/update-vue-ui/SKILL.md` before changing
+behavior.
+
+## Hard rules
+
+- Composition API + `<script setup>` only.
+- HTTP via `Nova.request()` — never `import axios`.
+- Tailwind utility classes only; no separate Tailwind config.
+- Heroicons via inline `<svg>`.
+- No new npm runtime dependencies without discussion (every kB ships
+  in every consuming app).
+- `dist/` is committed on purpose — run `npm run build` and stage
+  `dist/` in the same commit as the source change.
+- Polling must pause on `document.visibilityState === 'hidden'` and
+  the thread must keep using `?after=<lastId>` for delta-only fetches.
+
+## Component map
+
+| Concern | File |
+|---|---|
+| Outer shell | `resources/js/pages/Tool.vue` |
+| Tab switcher | `resources/js/components/TopicTabs.vue` |
+| Sidebar list | `resources/js/components/ConversationList.vue` |
+| Thread + composer | `resources/js/components/ConversationPane.vue` |
+| Message bubble | `resources/js/components/MessageBubble.vue` |
+| Composer input | `resources/js/components/MessageComposer.vue` |
+| Time helpers | `resources/js/lib/time.js` |

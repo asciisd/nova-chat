@@ -1,0 +1,32 @@
+---
+description: Auto-attached when editing resources/boost/ — the Laravel Boost bundle that ships to consumers. Reminds the agent to keep these in sync with the package.
+globs: resources/boost/**/*
+alwaysApply: false
+---
+
+`resources/boost/` is consumer-facing. Edits here change what AI assistants
+inside apps that `composer require asciisd/nova-chat` see.
+
+Read `.ai/skills/sync-boost-resources/SKILL.md` before editing — it
+walks through the four sections that need to stay in lockstep with the
+package code (contracts, wire format, stub, config keys).
+
+## Audience reminder
+
+- `resources/boost/guidelines/nova-chat.md` — always-loaded conventions
+  in consuming apps. Keep concise.
+- `resources/boost/skills/nova-chat-development/SKILL.md` — on-demand
+  integration playbook. Self-contained; consumers read it standalone.
+
+Never link from `resources/boost/` into `.ai/` — `.ai/` is not published
+to consumers.
+
+## Common drift sources
+
+- Adding a JSON field to a `Resource` in `src/Http/Resources/` without
+  updating the SKILL's "API contract" section.
+- Adding a config key to `config/nova-chat.php` without showing it in
+  the SKILL's Step 5 sample config.
+- Adding a column to `database/stubs/chat_messages_table.stub` without
+  updating both the SKILL's Step 1 migration sample and the guideline's
+  "Required message columns" table.

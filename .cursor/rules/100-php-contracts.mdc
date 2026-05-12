@@ -1,0 +1,27 @@
+---
+description: PHP-specific guidelines for the package internals. Auto-attached to any edit under src/, routes/, config/, or database/stubs/.
+globs: src/**/*.php,routes/**/*.php,config/**/*.php,database/stubs/**/*
+alwaysApply: false
+---
+
+When editing any of these files, the contract-driven design is in play.
+Read the relevant detail file in `.ai/`:
+
+- Architecture / where-things-go: `.ai/guidelines/package-architecture.md`
+- Contract rules: `.ai/guidelines/contract-purity.md`
+- API surface: `.ai/guidelines/api-design.md`
+- Schema rules (only if touching `database/stubs/`): `.ai/guidelines/database-schema.md`
+
+## Quick checks before committing
+
+```bash
+# No leaks of app-namespaced classes
+rg -n '\\App\\\\Models\\\\' src/ routes/ config/ database/stubs/
+
+# Routes still register
+php artisan route:list | grep nova-chat
+```
+
+If you're adding a feature, follow the playbook in
+`.ai/skills/add-package-feature/SKILL.md` end-to-end before opening the
+PR.
