@@ -19,7 +19,12 @@ The package never assumes a single shared `chat_messages` table. Each project pl
 ```bash
 composer require asciisd/nova-chat
 php artisan vendor:publish --tag=nova-chat-config
+php artisan migrate
 ```
+
+The package ships its own auto-loaded migration for the
+`nova_chat_blocked_participants` table that backs admin moderation —
+no `vendor:publish` step is required for it.
 
 Register the tool in `app/Providers/NovaServiceProvider.php`:
 
@@ -121,9 +126,29 @@ The trait only auto-derives when `is_from_admin` is **not** in the assigned attr
 
 Recommended optional: `reference` (ulid), `attachments` (json).
 
+Recommended for moderation (required if you want soft-delete via the admin
+endpoint): `deleted_at` (`$table->softDeletes()`), `deleted_by_type` /
+`deleted_by_id` (`$table->nullableMorphs('deleted_by')`), and
+`deletion_reason` (text nullable). Without `deleted_at` + the `SoftDeletes`
+trait on your message model, `DELETE /messages/{id}` returns a 422 with an
+actionable error.
+
 Recommended indexes: `(fk, created_at)` and `(fk, is_from_admin, read_at)`.
 
-A reference migration is shipped in `database/stubs/chat_messages_table.stub`.
+A reference migration is shipped in `database/stubs/chat_messages_table.stub`,
+and you can scaffold a fresh one in seconds:
+
+```bash
+php artisan nova-chat:make-table
+# prompts for table name, host model class, and FK column
+# writes database/migrations/<timestamp>_create_<table>_table.php
+```
+
+Pass arguments to skip the prompts:
+
+```bash
+php artisan nova-chat:make-table order_messages --host="App\\Models\\Order"
+```
 
 ### 3. Author models (Admin / User / Customer / …)
 
@@ -177,13 +202,52 @@ Add more topics any time — the sidebar grows a tab switcher automatically.
 
 All routes live under `/nova-vendor/nova-chat/` and are protected by Nova's API middleware (which resolves the configured `admin_guard`):
 
-| Method | Path                                            |
-|--------|-------------------------------------------------|
-| GET    | `/topics`                                       |
-| GET    | `/topics/{topic}/conversations`                 |
-| GET    | `/topics/{topic}/conversations/{id}/messages`   |
-| POST   | `/topics/{topic}/conversations/{id}/messages`   |
-| POST   | `/topics/{topic}/conversations/{id}/read`       |
+| Method | Path                                                       |
+|--------|------------------------------------------------------------|
+| GET    | `/topics`                                                  |
+| GET    | `/topics/{topic}/conversations`                            |
+| GET    | `/topics/{topic}/conversations/{id}/messages`              |
+| POST   | `/topics/{topic}/conversations/{id}/messages`              |
+| DELETE | `/topics/{topic}/conversations/{id}/messages/{message}`    |
+| POST   | `/topics/{topic}/conversations/{id}/read`                  |
+| GET    | `/blocks`                                                  |
+| POST   | `/blocks`                                                  |
+| DELETE | `/blocks/{participant_type}/{participant_id}`              |
+
+## Moderation
+
+Two admin abilities, both opt-in via `config('nova-chat.moderation')`:
+
+- **Block a participant globally.** Admins click "Block author" from any
+  message bubble. The block is stored in the package-owned table
+  `nova_chat_blocked_participants` and exposed on every `ChatParticipant`
+  via `$user->isChatBlocked()`. The package's admin POST endpoint is
+  unaffected (it only authors messages on behalf of admins) — your
+  user-side write endpoint MUST gate on `isChatBlocked()` to actually
+  enforce the block:
+
+  ```php
+  if ($user->isChatBlocked()) {
+      abort(403, 'You have been blocked from chatting.');
+  }
+  ```
+
+- **Soft-delete a user message.** Add `use Illuminate\Database\Eloquent\SoftDeletes;`
+  to your message model and migrate a `deleted_at` column (the stub does
+  this for new tables). Admins can then click "Delete message" on any
+  bubble; the row is soft-deleted with `deleted_by_*` and `deletion_reason`
+  recorded for audit. Admins continue to see the row grayed-out via
+  `withTrashed()`; the consumer's user-side endpoint naturally hides it
+  through the SoftDeletes global scope.
+
+Both abilities can be turned off without a code change:
+
+```php
+'moderation' => [
+    'allow_block'  => false,
+    'allow_delete' => false,
+],
+```
 
 ## Laravel Boost integration
 

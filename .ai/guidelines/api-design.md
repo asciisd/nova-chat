@@ -10,11 +10,16 @@ Treat this surface as a public API.
 GET    /nova-vendor/nova-chat/topics
 GET    /nova-vendor/nova-chat/topics/{topic}/conversations?search=&page=&per_page=
 GET    /nova-vendor/nova-chat/topics/{topic}/conversations/{id}/messages?after=<lastId>&per_page=
-POST   /nova-vendor/nova-chat/topics/{topic}/conversations/{id}/messages   { body }
+POST   /nova-vendor/nova-chat/topics/{topic}/conversations/{id}/messages         { body }
+DELETE /nova-vendor/nova-chat/topics/{topic}/conversations/{id}/messages/{msg}   { reason? }
 POST   /nova-vendor/nova-chat/topics/{topic}/conversations/{id}/read
+
+GET    /nova-vendor/nova-chat/blocks?per_page=
+POST   /nova-vendor/nova-chat/blocks                                              { participant_type, participant_id, reason? }
+DELETE /nova-vendor/nova-chat/blocks/{participant_type}/{participant_id}
 ```
 
-All five sit behind Nova's `api_middleware` group, which resolves the
+All routes sit behind Nova's `api_middleware` group, which resolves the
 guard from `config('nova-chat.admin_guard')` → `config('nova.guard')` →
 `'admin'`. Never bypass that middleware in `routes/api.php`.
 
@@ -24,7 +29,8 @@ guard from `config('nova-chat.admin_guard')` → `config('nova.guard')` →
 GET /topics
 → {
     data: [{ key, label, icon, default, unread_count }],
-    config: { sidebar: <ms>, thread: <ms> }
+    config: { sidebar: <ms>, thread: <ms> },
+    moderation: { allow_block: bool, allow_delete: bool }
   }
 
 GET /topics/{topic}/conversations
@@ -36,14 +42,29 @@ GET /topics/{topic}/conversations
 GET /topics/{topic}/conversations/{id}/messages
 → paginated [{
     id, reference, body, is_from_admin, read_at, created_at,
-    author: { type, id, name, avatar_url, is_admin }
+    deleted_at, deletion_reason,
+    deleted_by: { type, id, name } | null,
+    author: { type, id, name, avatar_url, is_admin, is_blocked }
   }]
+   (admin context — uses withTrashed(); soft-deleted rows are visible)
 
 POST /topics/{topic}/conversations/{id}/messages
 → { data: <same shape as a GET message> }
 
+DELETE /topics/{topic}/conversations/{id}/messages/{message}
+→ 204; returns 422 if the message model doesn't use SoftDeletes
+
 POST /topics/{topic}/conversations/{id}/read
 → { marked_read: <int> }
+
+GET /blocks
+→ paginated [{ id, participant: {...}, blocked_by: {...}|null, reason, created_at }]
+
+POST /blocks
+→ 201 { data: <BlockedParticipant resource> }
+
+DELETE /blocks/{type}/{id}
+→ 204
 ```
 
 `author.type` is the **morph alias** from `config('nova-chat.morph_map')`

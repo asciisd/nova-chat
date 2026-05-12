@@ -16,8 +16,10 @@ Drop-in traits cover the boilerplate: `HasChat`, `AsChatMessage`, `AsChatPartici
 
 - **Each topic owns its own message table.** Do not share one `chat_messages` table across topics — every host gets its own `*_messages` table with the required columns.
 - **Required message columns:** FK to host, `author_type`/`author_id` (morphs), `body` (text), `is_from_admin` (bool default false), `read_at` (timestamp nullable), `created_at`/`updated_at`. `reference` (ulid) and `attachments` (json) are recommended but optional.
+- **Recommended moderation columns** (required only if you want admins to soft-delete messages via the package endpoint): `deleted_at` (`softDeletes()`), `deleted_by_type` / `deleted_by_id` (`nullableMorphs('deleted_by')`), `deletion_reason` (text nullable). Without `deleted_at` + the `SoftDeletes` trait on your message model, `DELETE /messages/{id}` refuses with a 422.
 - **Required indexes:** composite on `(fk, created_at)` and `(fk, is_from_admin, read_at)`. The unread index is non-optional — the sidebar's unread badge query depends on it.
 - **Admin author override:** the participant class that authors messages from the Nova side must override `isChatAdmin(): bool { return true; }`. Other participant classes inherit the default `false`.
+- **Gate the user-side endpoint on `isChatBlocked()`.** The package's admin POST never inspects blocks. If you expose your own user-side write endpoint, it must `abort(403)` when `$user->isChatBlocked()` returns true — otherwise the "Block author" button in the Nova UI does nothing.
 - **Morph map entries are required**, not optional. Add every Chattable host model and every ChatParticipant author class to `config('nova-chat.morph_map')`. Skipping this stores full class names in `author_type`, which breaks refactors and pollutes JSON payloads.
 - **Set `is_from_admin` at write time**, not derived. The controller does this automatically when admins send via the API; if you create messages elsewhere (jobs, factories, seeders), set the column explicitly — never compute it later.
 - **Topics declare BOTH a host model and a message model** in `config('nova-chat.topics')`. Pointing only at the host is invalid and will throw at boot.
@@ -27,9 +29,32 @@ Drop-in traits cover the boilerplate: `HasChat`, `AsChatMessage`, `AsChatPartici
 - Contracts → `Asciisd\NovaChat\Contracts\*`
 - Traits → `Asciisd\NovaChat\Concerns\*`
 - Config → `config/nova-chat.php` (published from package)
-- Reference migration → `database/stubs/chat_messages_table.stub` inside the package; publish with `--tag=nova-chat-stubs`
+- Reference migration → `database/stubs/chat_messages_table.stub` inside the package; publish with `--tag=nova-chat-stubs` or generate with `php artisan nova-chat:make-table`
+- Package-owned migration (`nova_chat_blocked_participants`) → auto-loaded; runs on the next `php artisan migrate`
 - API routes → mounted automatically at `/nova-vendor/nova-chat/*` under Nova auth middleware
 - Tool sidebar route → `/nova/nova-chat`
+
+## Generating a chat table
+
+Use the bundled artisan command instead of hand-copying the stub:
+
+```bash
+php artisan nova-chat:make-table              # interactive
+php artisan nova-chat:make-table order_messages --host="App\\Models\\Order"
+```
+
+The command rewrites the stub's table name and FK column (`chattable_id` →
+e.g. `order_id`) and writes a timestamped file to `database/migrations/`.
+
+## Moderation surface
+
+- `POST /nova-vendor/nova-chat/blocks { participant_type, participant_id, reason? }` — block globally.
+- `DELETE /nova-vendor/nova-chat/blocks/{type}/{id}` — unblock.
+- `DELETE /nova-vendor/nova-chat/topics/{topic}/conversations/{id}/messages/{message} { reason? }` — soft-delete a message.
+
+Both controllers respect `config('nova-chat.moderation')` (`allow_block`,
+`allow_delete`, `max_reason_length`) — flip the flags to disable a feature
+without touching code.
 
 ## Asset rebuild
 

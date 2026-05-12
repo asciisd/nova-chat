@@ -18,6 +18,26 @@ shape and ships a publishable stub at
 | `created_at` / `updated_at` | timestamps | yes | sidebar ordering, relative time |
 | `reference` | ulid unique | recommended | stable, public-safe id |
 | `attachments` | json nullable | recommended | forward-compat for v2 attachments |
+| `deleted_at` | timestamp nullable (`softDeletes()`) | required for moderation | needed for `DELETE /messages/{id}`; the controller refuses with 422 if the model doesn't use `SoftDeletes` |
+| `deleted_by_type` / `deleted_by_id` | morphs nullable | recommended | audit trail — who deleted the message |
+| `deletion_reason` | text nullable | recommended | audit trail — why; surfaced in admin UI |
+
+## Package-owned tables (you maintain these)
+
+The package owns exactly **one** table:
+
+- `nova_chat_blocked_participants` — records globally-blocked
+  participants. Migration auto-loaded from `database/migrations/`; no
+  `vendor:publish` step. The columns are: `participant_type`,
+  `participant_id`, polymorphic `blocked_by_*` (nullable),
+  `reason` (nullable), `created_at`, `updated_at`, plus a unique index
+  on `(participant_type, participant_id)`.
+
+If you need to add a second package-owned table, mention it explicitly
+in [.ai/guidelines/contract-purity.md](.ai/guidelines/contract-purity.md)
+and in `resources/boost/guidelines/nova-chat.md`. The "package owns no
+tables" rule no longer holds; the new rule is **the package owns
+exactly the tables documented here**.
 
 ## Required indexes (non-negotiable)
 

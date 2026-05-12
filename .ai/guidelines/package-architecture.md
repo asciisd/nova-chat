@@ -8,24 +8,35 @@ host application. Keep this map in mind before editing any file.
 ```
 src/
 ├── NovaChat.php                  Tool subclass — registers dist/js/tool.{js,css}
-├── NovaChatServiceProvider.php   Auto-discovered SP; mounts routes + morph map
+├── NovaChatServiceProvider.php   Auto-discovered SP; mounts routes + morph map + migrations + commands
 ├── Concerns/
 │   ├── HasChat.php               trait for Chattable host models
-│   ├── AsChatMessage.php         trait for ChatMessage models (auto is_from_admin, ulid)
-│   └── AsChatParticipant.php     trait for ChatParticipant author models
+│   ├── AsChatMessage.php         trait for ChatMessage models (auto is_from_admin, ulid, deleteByAdmin)
+│   └── AsChatParticipant.php     trait for ChatParticipant author models (default isChatBlocked)
+├── Console/
+│   └── Commands/
+│       └── MakeTableCommand.php  `nova-chat:make-table` artisan generator
 ├── Contracts/
 │   ├── Chattable.php             host model interface
-│   ├── ChatMessage.php           message model interface
-│   └── ChatParticipant.php       author model interface
+│   ├── ChatMessage.php           message model interface (incl. deleteByAdmin)
+│   └── ChatParticipant.php       author model interface (incl. isChatBlocked)
 ├── Http/
-│   ├── Controllers/              ConversationsController only
+│   ├── Controllers/              ConversationsController, BlockedParticipantsController
 │   └── Resources/                JSON API resources (the wire format)
+├── Models/
+│   └── BlockedParticipant.php    package-owned Eloquent model for nova_chat_blocked_participants
 └── Support/
     ├── TopicRegistry.php         resolves config('nova-chat.topics') into descriptors
-    └── TopicDescriptor.php       value object: key, host class, message class, label, …
+    ├── TopicDescriptor.php       value object: key, host class, message class, label, …
+    └── BlockList.php             singleton service that owns block CRUD + per-request cache
+
+database/
+├── migrations/                   PACKAGE-OWNED migrations (auto-loaded; not publishable)
+│   └── ..._create_nova_chat_blocked_participants_table.php
+└── stubs/                        publishable migration stubs for consumer message tables
 
 routes/
-├── api.php                       /nova-vendor/nova-chat/* JSON endpoints
+├── api.php                       /nova-vendor/nova-chat/* JSON endpoints (incl. /blocks, DELETE /messages)
 └── inertia.php                   /nova/nova-chat Inertia page
 
 resources/
@@ -89,6 +100,14 @@ If you add a new responsibility, put it here — never in `NovaChat.php`
   Reverb/Pusher is a v2 conversation, not a small change.
 - It never authenticates users itself — it relies entirely on Nova's
   configured `admin_guard`.
+- It never enforces blocks on the user-side write path — the package's
+  POST endpoint is admin-only. Consumers gate their own user-side route
+  on `isChatBlocked()`.
+
+The one table the package **does** own is
+`nova_chat_blocked_participants` (auto-loaded migration). If a future
+feature needs another package-owned table, document it explicitly here
+and in [.ai/guidelines/database-schema.md](.ai/guidelines/database-schema.md).
 
 If a feature request would force any of these, push back before
 implementing — see `.ai/guidelines/contract-purity.md`.

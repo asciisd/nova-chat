@@ -49,6 +49,16 @@ The user says "let me chat about Orders inside Nova." Walk through these six ste
 
 ### Step 1 — Create the message table migration
 
+The fastest path is the bundled generator, which rewrites the package
+stub for you (skip Step 1 and Step 1b if you ran the command):
+
+```bash
+php artisan nova-chat:make-table              # interactive
+php artisan nova-chat:make-table order_messages --host="App\\Models\\Order"
+```
+
+If you prefer to hand-roll, use this template:
+
 ```php
 // database/migrations/2026_xx_xx_create_order_messages_table.php
 use Illuminate\Database\Migrations\Migration;
@@ -68,6 +78,13 @@ return new class extends Migration
             $table->json('attachments')->nullable();        // recommended forward-compat
             $table->boolean('is_from_admin')->default(false);
             $table->timestamp('read_at')->nullable();
+
+            // Moderation columns. Required only if you want to use the
+            // `DELETE /messages/{id}` admin endpoint.
+            $table->nullableMorphs('deleted_by');
+            $table->text('deletion_reason')->nullable();
+            $table->softDeletes();
+
             $table->timestamps();
 
             $table->index(['order_id', 'created_at']);
@@ -80,6 +97,17 @@ return new class extends Migration
         Schema::dropIfExists('order_messages');
     }
 };
+```
+
+If you're upgrading an existing chat table that pre-dates the moderation
+columns, ship a follow-up migration:
+
+```php
+Schema::table('order_messages', function (Blueprint $table) {
+    $table->nullableMorphs('deleted_by');
+    $table->text('deletion_reason')->nullable();
+    $table->softDeletes();
+});
 ```
 
 **Why `is_from_admin` is a stored column (not derived per-query):** the sidebar's unread badge runs a hot query (`where('is_from_admin', false)->whereNull('read_at')->count()`). A polymorphic `whereHasMorph(...)` join is roughly 10× more expensive at scale. The denormalized column + composite index lets unread counts stay O(log n).
@@ -102,14 +130,17 @@ use Asciisd\NovaChat\Concerns\AsChatMessage;
 use Asciisd\NovaChat\Contracts\ChatMessage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class OrderMessage extends Model implements ChatMessage
 {
     use AsChatMessage;
+    use SoftDeletes; // required for the admin DELETE /messages/{id} endpoint
 
     protected $fillable = [
         'order_id', 'reference', 'author_type', 'author_id',
         'body', 'attachments', 'is_from_admin', 'read_at',
+        'deleted_by_type', 'deleted_by_id', 'deletion_reason',
     ];
 
     protected $casts = [
@@ -124,6 +155,10 @@ class OrderMessage extends Model implements ChatMessage
     }
 }
 ```
+
+Drop `use SoftDeletes;` and the moderation `$fillable` keys if you don't
+want admin moderation; the package's `DELETE /messages/{id}` endpoint
+will then return a clear 422 telling you what to add.
 
 The `AsChatMessage` trait provides `author()` (morphTo), `getBody()`, `isRead()`, `markAsRead()`, `isFromAdmin()`, and auto-fills `reference` with a ULID on `creating` if the column exists. **You only need to define `chattable()`** — name and FK column are project-specific so the trait can't infer them.
 
@@ -191,7 +226,29 @@ class User extends Authenticatable implements ChatParticipant
 }
 ```
 
-`AsChatParticipant` provides `chatDisplayName()` (returns `name` then `email` then `#id`) and `chatAvatarUrl()` (null). Override either if the project needs Gravatar URLs, etc.
+`AsChatParticipant` provides `chatDisplayName()` (returns `name` then `email` then `#id`), `chatAvatarUrl()` (null), and `isChatBlocked()` (delegates to the package's `BlockList`, which reads `nova_chat_blocked_participants`). Override any of them for project-specific behavior — e.g. Gravatar URLs or a custom block storage.
+
+If you expose a user-side write endpoint (the package only ships the admin one), gate it on the block check yourself:
+
+```php
+public function store(Request $request, Order $order)
+{
+    /** @var \App\Models\User $user */
+    $user = $request->user();
+
+    if ($user->isChatBlocked()) {
+        abort(403, 'You have been blocked from chatting.');
+    }
+
+    return $order->chatMessages()->create([
+        'author_type' => $user->getMorphClass(),
+        'author_id'   => $user->getKey(),
+        'body'        => $request->validate(['body' => 'required|string|max:5000'])['body'],
+    ]);
+}
+```
+
+The Nova UI's "Block author" button is a no-op without this check — the package never enforces blocks itself.
 
 ### Step 5 — Register the topic + morph map in `config/nova-chat.php`
 
@@ -220,6 +277,12 @@ return [
         'sidebar' => 4000,
         'thread'  => 3000,
     ],
+
+    'moderation' => [
+        'allow_block'       => true,
+        'allow_delete'      => true,
+        'max_reason_length' => 500,
+    ],
 ];
 ```
 
@@ -236,12 +299,16 @@ php artisan route:list | grep nova-chat
 Expected routes:
 
 ```
-GET     nova/nova-chat                                                  (Inertia tool page)
+GET     nova/nova-chat                                                              (Inertia tool page)
 GET     nova-vendor/nova-chat/topics
 GET     nova-vendor/nova-chat/topics/{topic}/conversations
 GET     nova-vendor/nova-chat/topics/{topic}/conversations/{id}/messages
 POST    nova-vendor/nova-chat/topics/{topic}/conversations/{id}/messages
+DELETE  nova-vendor/nova-chat/topics/{topic}/conversations/{id}/messages/{message}
 POST    nova-vendor/nova-chat/topics/{topic}/conversations/{id}/read
+GET     nova-vendor/nova-chat/blocks
+POST    nova-vendor/nova-chat/blocks
+DELETE  nova-vendor/nova-chat/blocks/{type}/{id}
 ```
 
 Quick controller smoke test in tinker:
@@ -269,6 +336,10 @@ You should see your topic with a numeric `unread_count`.
 | Unread badge never clears even after viewing a thread | The `read` endpoint requires the admin guard | Confirm `config('nova-chat.admin_guard')` matches the guard the user is signed in with. In most projects this defaults correctly from `nova.guard`. |
 | Vue changes don't appear after editing the package | Bundle not rebuilt | `cd vendor/asciisd/nova-chat && npm run build`. The consuming app's Vite pipeline is unrelated. |
 | Sidebar order doesn't refresh when new messages arrive | Polling is paused by browser | Polling pauses when `document.visibilityState === 'hidden'`. Polling resumes on tab focus. |
+| `DELETE /messages/{id}` returns 422 with "must use SoftDeletes" | Message model is missing the trait or the `deleted_at` column | Add `use Illuminate\Database\Eloquent\SoftDeletes;` to the model and migrate `$table->softDeletes()` (plus the recommended `nullableMorphs('deleted_by')` and `text('deletion_reason')->nullable()`). |
+| Blocked user can still post from the public app | Consumer's user-side endpoint isn't gated on `isChatBlocked()` | The package's admin POST is unaffected by blocks. Gate your own user-side route — `if ($user->isChatBlocked()) abort(403);` — otherwise the "Block author" button in Nova has no effect. |
+| `nova-chat:make-table` says a migration already exists | A previous run already wrote one | Delete the duplicate or re-run with `--force` to overwrite. The check matches `*_create_<table>_table.php`. |
+| `php artisan migrate` doesn't create `nova_chat_blocked_participants` | Service provider not booted (e.g. cached config from before upgrade) | `php artisan optimize:clear` and re-run `migrate`. The migration is auto-loaded; nothing to publish. |
 
 ## API contract (for AI-generated client code)
 
@@ -276,20 +347,42 @@ All endpoints sit under `/nova-vendor/nova-chat/` and require the configured adm
 
 ```
 GET    /topics
-       → { data: [{ key, label, icon, default, unread_count }], config: { sidebar, thread } }
+       → { data: [{ key, label, icon, default, unread_count }],
+           config: { sidebar, thread },
+           moderation: { allow_block, allow_delete } }
 
 GET    /topics/{topic}/conversations?search=&page=&per_page=
        → paginated [{ id, reference, title, subtitle, badge, unread_count, latest_message: {...} }]
 
 GET    /topics/{topic}/conversations/{id}/messages?after=<lastId>&per_page=
-       → paginated [{ id, reference, body, is_from_admin, read_at, created_at, author: { type, id, name, avatar_url, is_admin } }]
+       → paginated [{
+           id, reference, body, is_from_admin, read_at, created_at,
+           deleted_at, deletion_reason,
+           deleted_by: { type, id, name } | null,
+           author: { type, id, name, avatar_url, is_admin, is_blocked }
+         }]
 
 POST   /topics/{topic}/conversations/{id}/messages
        body: { body: string (required, max:5000, trimmed) }
        → { data: { ...same shape as GET message... } }
 
+DELETE /topics/{topic}/conversations/{id}/messages/{message}
+       body: { reason?: string (max:500) }
+       → 204; the row is soft-deleted with deleted_by_*, deletion_reason set.
+       Returns 422 if the message model doesn't use SoftDeletes.
+
 POST   /topics/{topic}/conversations/{id}/read
        → { marked_read: number }
+
+GET    /blocks?per_page=
+       → paginated [{ id, participant: {...}, blocked_by: {...}|null, reason, created_at }]
+
+POST   /blocks
+       body: { participant_type: morph alias or FQCN, participant_id, reason?: string }
+       → 201 { data: <BlockedParticipant resource> }
+
+DELETE /blocks/{participant_type}/{participant_id}
+       → 204 (no body)
 ```
 
 `type` in `author` is the morph alias from `morph_map` — short, refactor-safe (`'admin'`, `'user'`).
