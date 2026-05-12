@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Earlier history (`v0.1.x`) is reconstructed from git tags and commits.
 
+## [1.0.1] — 2026-05-12
+
+### Fixed
+
+- The `nova_chat_blocked_participants` migration auto-generated a
+  composite index name (`nova_chat_blocked_participants_blocked_by_type_blocked_by_id_index`,
+  67 chars) that exceeded MySQL's 64-character identifier cap, causing
+  `php artisan migrate` to fail with `SQLSTATE[42000] 1059 Identifier
+  name … is too long`. The migration now passes an explicit short index
+  name (`nova_chat_blocked_by_idx`).
+- The publishable stub `database/stubs/chat_messages_table.stub` and the
+  `nova-chat:make-table` generator now emit an explicit
+  `<table>_deleted_by_idx` index name instead of relying on
+  `nullableMorphs()`'s auto-generated 33-char-suffix default. This keeps
+  generated migrations safe even when the host table name is long
+  (e.g. `customer_support_request_messages`).
+
+### Recovering from the v1.0.0 failure
+
+If you upgraded to `v1.0.0` and `php artisan migrate` failed mid-way on
+the blocks table, MySQL created the table but rejected the index, and
+Laravel did **not** record the migration as run. Recover with:
+
+```sql
+DROP TABLE nova_chat_blocked_participants;
+```
+
+Then `composer update asciisd/nova-chat` to pull `v1.0.1` and run
+`php artisan migrate` again.
+
 ## [1.0.0] — 2026-05-12
 
 First stable release. The contracts, wire format, and configuration keys

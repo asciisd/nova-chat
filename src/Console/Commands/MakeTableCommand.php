@@ -157,6 +157,7 @@ class MakeTableCommand extends Command
             "['chattable_id', 'created_at']" => "['{$foreignKey}', 'created_at']",
             "['chattable_id', 'is_from_admin', 'read_at']" => "['{$foreignKey}', 'is_from_admin', 'read_at']",
             "'chat_messages_unread_idx'" => "'{$table}_unread_idx'",
+            "'chat_messages_deleted_by_idx'" => "'{$table}_deleted_by_idx'",
         ];
 
         $rendered = strtr($stub, $replacements);

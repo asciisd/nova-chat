@@ -31,7 +31,10 @@ return new class extends Migration
             // Moderation columns. Required only if you want to use the
             // `DELETE /messages/{id}` admin endpoint — the controller refuses
             // with a 422 if your message model doesn't use SoftDeletes.
-            $table->nullableMorphs('deleted_by');
+            //
+            // The explicit index name keeps the composite index under MySQL's
+            // 64-char identifier cap even when the table name itself is long.
+            $table->nullableMorphs('deleted_by', 'chat_messages_deleted_by_idx');
             $table->text('deletion_reason')->nullable();
             $table->softDeletes();
 

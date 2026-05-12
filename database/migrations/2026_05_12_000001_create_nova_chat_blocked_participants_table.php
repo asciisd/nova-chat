@@ -24,8 +24,11 @@ return new class extends Migration
             $table->unsignedBigInteger('participant_id');
 
             // Polymorphic pointer to the admin who issued the block. Nullable so
-            // jobs / system-issued blocks remain valid rows.
-            $table->nullableMorphs('blocked_by');
+            // jobs / system-issued blocks remain valid rows. We pass an explicit
+            // index name because the auto-generated one (table prefix + col1 +
+            // col2 + "_index") would be 67 chars and exceed MySQL's 64-char
+            // identifier cap.
+            $table->nullableMorphs('blocked_by', 'nova_chat_blocked_by_idx');
 
             $table->text('reason')->nullable();
             $table->timestamps();
