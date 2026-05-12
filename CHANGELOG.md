@@ -12,6 +12,8 @@ First stable release. The contracts, wire format, and configuration keys
 are now considered public surface; future breaking changes will require a
 major-version bump.
 
+![Nova Chat overview](docs/screenshots/overview.png)
+
 ### Added
 
 - **Admin moderation — global participant blocks.**

@@ -9,6 +9,10 @@ A reusable, contract-driven WhatsApp-style chat tool for Laravel Nova.
 
 The package never assumes a single shared `chat_messages` table. Each project plugs in its own host model (a "topic"), its own message model, and its own author models. Everything connects through three small interfaces.
 
+![Nova Chat — sidebar, thread, and composer](docs/screenshots/overview.png)
+
+> Drop the captured PNG at [`docs/screenshots/overview.png`](docs/screenshots/overview.png) and the image above resolves automatically. See [`docs/screenshots/README.md`](docs/screenshots/README.md) for the capture spec.
+
 ## Requirements
 
 - PHP ^8.3
