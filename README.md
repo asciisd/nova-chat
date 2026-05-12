@@ -9,9 +9,7 @@ A reusable, contract-driven WhatsApp-style chat tool for Laravel Nova.
 
 The package never assumes a single shared `chat_messages` table. Each project plugs in its own host model (a "topic"), its own message model, and its own author models. Everything connects through three small interfaces.
 
-![Nova Chat — sidebar, thread, and composer](docs/screenshots/overview.png)
-
-> Drop the captured PNG at [`docs/screenshots/overview.png`](docs/screenshots/overview.png) and the image above resolves automatically. See [`docs/screenshots/README.md`](docs/screenshots/README.md) for the capture spec.
+![Nova Chat — sidebar, thread, and composer](docs/screenshots/thread.png)
 
 ## Requirements
 
@@ -202,6 +200,10 @@ class User extends Authenticatable implements ChatParticipant
 
 Add more topics any time — the sidebar grows a tab switcher automatically.
 
+![Sidebar search filtering conversations by title](docs/screenshots/search.png)
+
+The sidebar's search box filters by `title` and `reference` on whichever topic is active.
+
 ## API surface (admin auth required)
 
 All routes live under `/nova-vendor/nova-chat/` and are protected by Nova's API middleware (which resolves the configured `admin_guard`):
@@ -219,6 +221,8 @@ All routes live under `/nova-vendor/nova-chat/` and are protected by Nova's API 
 | DELETE | `/blocks/{participant_type}/{participant_id}`              |
 
 ## Moderation
+
+![Per-message admin actions menu — Delete message and Block author](docs/screenshots/actions_menu.png)
 
 Two admin abilities, both opt-in via `config('nova-chat.moderation')`:
 

@@ -42,7 +42,8 @@ First stable release. The contracts, wire format, and configuration keys
 are now considered public surface; future breaking changes will require a
 major-version bump.
 
-![Nova Chat overview](docs/screenshots/overview.png)
+![Nova Chat — sidebar, open thread, composer](docs/screenshots/thread.png)
+![Per-message moderation menu](docs/screenshots/actions_menu.png)
 
 ### Added
 

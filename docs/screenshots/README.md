@@ -25,7 +25,9 @@ compression artefacts. Aim for roughly 2400 × 1500 px for hero shots and
 
 | File | Used in | Scene |
 |---|---|---|
-| `overview.png` | [README.md](../../README.md), [CHANGELOG.md](../../CHANGELOG.md) | Hero shot. Sidebar with a topic tab plus 2-3 conversations, the right-hand thread open with at least 4 alternating bubbles (admin replies right-aligned, user messages left-aligned), composer focused with a half-typed reply. |
+| `thread.png` | [README.md](../../README.md) (hero), [CHANGELOG.md](../../CHANGELOG.md) (v1.0.0) | Sidebar with the active topic tab plus 2-3 conversations, the right-hand thread open with alternating bubbles (admin replies right-aligned, user messages left-aligned), composer at the bottom. |
+| `actions_menu.png` | [README.md](../../README.md) (Moderation section), [CHANGELOG.md](../../CHANGELOG.md) (v1.0.0) | The same view with the per-message kebab menu open, showing **Delete message** and **Block author** items. |
+| `search.png` | [README.md](../../README.md) (sidebar callout) | Sidebar search input focused with a query typed in, sidebar filtered to matching conversations only. |
 
 ## Adding a new screenshot scene
 
@@ -40,10 +42,11 @@ compression artefacts. Aim for roughly 2400 × 1500 px for hero shots and
 3. Add a row to the table above so future contributors know what the file
    is supposed to depict.
 
-## Tips for the hero shot
+## Tips for capture
 
-- Use a topic with a recognizable label (e.g. "Orders", "Tickets") rather
-  than the default `chat_messages` so the sidebar feels real.
+- Use a topic with a recognizable label (e.g. "Orders", "Tickets",
+  "Signals") rather than the default `chat_messages` so the sidebar
+  feels real.
 - Seed at least three conversations so the unread badge is visible on at
   least one row.
 - For the open thread, mix admin and user messages so the right-aligned
