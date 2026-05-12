@@ -68,4 +68,30 @@ return [
         'thread'  => 3000,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Moderation
+    |--------------------------------------------------------------------------
+    |
+    | `allow_block`  — admins can block participants from chatting globally.
+    |                  Backed by the package-owned table
+    |                  `nova_chat_blocked_participants`. The block is enforced
+    |                  by the consumer's user-side write endpoint via
+    |                  $user->isChatBlocked() (the package's admin POST is
+    |                  unaffected).
+    |
+    | `allow_delete` — admins can soft-delete user messages. Requires the
+    |                  consumer's message model to `use SoftDeletes` and the
+    |                  table to have a `deleted_at` column. The recommended
+    |                  `deleted_by_*` and `deletion_reason` columns capture
+    |                  who deleted what and why.
+    |
+    | `max_reason_length` applies to both block reasons and delete reasons.
+    */
+    'moderation' => [
+        'allow_block'       => true,
+        'allow_delete'      => true,
+        'max_reason_length' => 500,
+    ],
+
 ];

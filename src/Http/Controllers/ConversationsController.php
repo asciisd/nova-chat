@@ -2,17 +2,20 @@
 
 namespace Asciisd\NovaChat\Http\Controllers;
 
+use Asciisd\NovaChat\Contracts\ChatMessage;
 use Asciisd\NovaChat\Contracts\ChatParticipant;
 use Asciisd\NovaChat\Http\Resources\ConversationResource;
 use Asciisd\NovaChat\Http\Resources\MessageResource;
 use Asciisd\NovaChat\Support\TopicDescriptor;
 use Asciisd\NovaChat\Support\TopicRegistry;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 
 class ConversationsController extends Controller
 {
@@ -33,6 +36,10 @@ class ConversationsController extends Controller
         return response()->json([
             'data' => $items,
             'config' => config('nova-chat.poll_interval_ms', ['sidebar' => 4000, 'thread' => 3000]),
+            'moderation' => [
+                'allow_block' => (bool) config('nova-chat.moderation.allow_block', true),
+                'allow_delete' => (bool) config('nova-chat.moderation.allow_delete', true),
+            ],
         ]);
     }
 
@@ -86,7 +93,14 @@ class ConversationsController extends Controller
         $descriptor = $this->topics->find($topic);
         $host = $this->findHost($descriptor, $id);
 
-        $query = $host->chatMessages()->with('author')->orderBy('id');
+        $query = $host->chatMessages()->with(['author', 'deletedBy'])->orderBy('id');
+
+        // Admins see soft-deleted messages (grayed-out + reason) so moderation
+        // is auditable. The user-side endpoint — which is the consumer's own
+        // route — naturally hides them via the SoftDeletes global scope.
+        if ($this->messageModelUsesSoftDeletes($descriptor)) {
+            $query->withTrashed();
+        }
 
         if ($after = $request->query('after')) {
             $query->where('id', '>', (int) $after);
@@ -124,6 +138,46 @@ class ConversationsController extends Controller
         $message->setRelation('author', $admin);
 
         return (new MessageResource($message))->response();
+    }
+
+    public function destroy(Request $request, string $topic, int|string $id, int|string $messageId): JsonResponse
+    {
+        if (! (bool) config('nova-chat.moderation.allow_delete', true)) {
+            abort(403, 'Chat message deletion is disabled in this installation.');
+        }
+
+        $descriptor = $this->topics->find($topic);
+        $host = $this->findHost($descriptor, $id);
+
+        if (! $this->messageModelUsesSoftDeletes($descriptor)) {
+            abort(422, 'Message model [' . $descriptor->messageModel . '] must use '
+                . SoftDeletes::class
+                . ' before messages can be deleted. Add `use SoftDeletes;` to the model and migrate a `deleted_at` column.');
+        }
+
+        $maxReason = (int) config('nova-chat.moderation.max_reason_length', 500);
+
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', "max:{$maxReason}"],
+        ]);
+
+        $message = $host->chatMessages()->whereKey($messageId)->first();
+
+        if (! $message instanceof ChatMessage) {
+            abort(404, 'Message not found in this conversation.');
+        }
+
+        $admin = $this->currentAdmin();
+
+        try {
+            $message->deleteByAdmin($admin, $data['reason'] ?? null);
+        } catch (LogicException $e) {
+            // Defensive: messageModelUsesSoftDeletes() already checked, but
+            // surface the trait's error verbatim if the contract impl disagrees.
+            abort(422, $e->getMessage());
+        }
+
+        return response()->json(null, 204);
     }
 
     public function read(string $topic, int|string $id): JsonResponse
@@ -164,6 +218,15 @@ class ConversationsController extends Controller
         $key = $relation->getForeignKeyName();
 
         return str_contains($key, '.') ? array_slice(explode('.', $key), -1)[0] : $key;
+    }
+
+    protected function messageModelUsesSoftDeletes(TopicDescriptor $descriptor): bool
+    {
+        return in_array(
+            SoftDeletes::class,
+            class_uses_recursive($descriptor->messageModel),
+            true,
+        );
     }
 
     protected function hydrateLatestMessages($hosts, TopicDescriptor $descriptor, string $foreignKey): void

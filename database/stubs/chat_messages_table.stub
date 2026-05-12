@@ -27,6 +27,14 @@ return new class extends Migration
             $table->json('attachments')->nullable();
             $table->boolean('is_from_admin')->default(false);
             $table->timestamp('read_at')->nullable();
+
+            // Moderation columns. Required only if you want to use the
+            // `DELETE /messages/{id}` admin endpoint — the controller refuses
+            // with a 422 if your message model doesn't use SoftDeletes.
+            $table->nullableMorphs('deleted_by');
+            $table->text('deletion_reason')->nullable();
+            $table->softDeletes();
+
             $table->timestamps();
 
             $table->index(['chattable_id', 'created_at']);

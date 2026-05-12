@@ -30,6 +30,7 @@
                 :topic-key="activeTopic.key"
                 :conversation-id="activeConversationId"
                 :poll-interval="pollIntervals.thread"
+                :moderation="moderation"
             />
             <div v-else class="nova-chat-placeholder">
                 Select a conversation to start chatting.
@@ -49,12 +50,14 @@ const topics = ref([])
 const activeTopic = ref(null)
 const activeConversationId = ref(null)
 const pollIntervals = ref({ sidebar: 4000, thread: 3000 })
+const moderation = ref({ allow_block: true, allow_delete: true })
 
 async function loadTopics() {
     try {
         const { data } = await Nova.request().get('/nova-vendor/nova-chat/topics')
         topics.value = data.data || []
         pollIntervals.value = data.config || pollIntervals.value
+        if (data.moderation) moderation.value = data.moderation
         activeTopic.value = topics.value.find((t) => t.default) || topics.value[0] || null
     } finally {
         loading.value = false

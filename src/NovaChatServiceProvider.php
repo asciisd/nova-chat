@@ -2,6 +2,8 @@
 
 namespace Asciisd\NovaChat;
 
+use Asciisd\NovaChat\Console\Commands\MakeTableCommand;
+use Asciisd\NovaChat\Support\BlockList;
 use Asciisd\NovaChat\Support\TopicRegistry;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +17,7 @@ class NovaChatServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../config/nova-chat.php', 'nova-chat');
 
         $this->app->singleton(TopicRegistry::class, fn () => new TopicRegistry);
+        $this->app->singleton(BlockList::class, fn () => new BlockList);
     }
 
     public function boot(): void
@@ -26,6 +29,12 @@ class NovaChatServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../database/stubs' => database_path('stubs/nova-chat'),
         ], 'nova-chat-stubs');
+
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([MakeTableCommand::class]);
+        }
 
         $this->registerMorphMap();
         $this->registerRoutes();

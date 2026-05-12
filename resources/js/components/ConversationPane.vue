@@ -17,6 +17,9 @@
                 v-for="m in messages"
                 :key="m.id"
                 :message="m"
+                :can-delete="moderation.allow_delete"
+                :can-block="moderation.allow_block"
+                @action="onMessageAction"
             />
         </div>
 
@@ -37,6 +40,10 @@ const props = defineProps({
     topicKey: { type: String, required: true },
     conversationId: { type: [Number, String], required: true },
     pollInterval: { type: Number, default: 3000 },
+    moderation: {
+        type: Object,
+        default: () => ({ allow_block: true, allow_delete: true }),
+    },
 })
 
 const messages = ref([])
@@ -74,7 +81,6 @@ async function pollDelta() {
         )
         const fresh = data.data || []
         if (fresh.length) {
-            // Filter dupes already present (covers the optimistic append case).
             const known = new Set(messages.value.map((m) => m.id))
             const adds = fresh.filter((m) => !known.has(m.id))
             if (adds.length) {
@@ -122,6 +128,82 @@ function onSent(message) {
 function scrollToBottom() {
     const el = scrollEl.value
     if (el) el.scrollTop = el.scrollHeight
+}
+
+async function onMessageAction({ action, message }) {
+    if (action === 'delete') return await deleteMessage(message)
+    if (action === 'block') return await blockAuthor(message)
+    if (action === 'unblock') return await unblockAuthor(message)
+}
+
+async function deleteMessage(message) {
+    const reason = window.prompt(
+        'Delete this message? Optional reason for the audit trail:',
+        '',
+    )
+    if (reason === null) return // cancel
+    try {
+        await Nova.request().delete(
+            `/nova-vendor/nova-chat/topics/${props.topicKey}/conversations/${props.conversationId}/messages/${message.id}`,
+            { data: reason ? { reason } : {} },
+        )
+        // Optimistically mark as deleted; the next poll will replace with the
+        // server's record (including deleted_by/name).
+        const idx = messages.value.findIndex((m) => m.id === message.id)
+        if (idx !== -1) {
+            messages.value[idx] = {
+                ...messages.value[idx],
+                deleted_at: new Date().toISOString(),
+                deletion_reason: reason || null,
+            }
+        }
+    } catch (e) {
+        const msg = e?.response?.data?.message || 'Failed to delete message.'
+        Nova.error?.(msg) ?? window.alert(msg)
+    }
+}
+
+async function blockAuthor(message) {
+    const author = message.author
+    if (!author?.type || author.id == null) return
+    const reason = window.prompt(
+        `Block ${author.name || 'this user'} from chatting? Optional reason:`,
+        '',
+    )
+    if (reason === null) return
+    try {
+        await Nova.request().post('/nova-vendor/nova-chat/blocks', {
+            participant_type: author.type,
+            participant_id: author.id,
+            reason: reason || null,
+        })
+        applyAuthorBlockFlag(author, true)
+    } catch (e) {
+        const msg = e?.response?.data?.message || 'Failed to block author.'
+        Nova.error?.(msg) ?? window.alert(msg)
+    }
+}
+
+async function unblockAuthor(message) {
+    const author = message.author
+    if (!author?.type || author.id == null) return
+    try {
+        await Nova.request().delete(
+            `/nova-vendor/nova-chat/blocks/${encodeURIComponent(author.type)}/${encodeURIComponent(author.id)}`,
+        )
+        applyAuthorBlockFlag(author, false)
+    } catch (e) {
+        const msg = e?.response?.data?.message || 'Failed to unblock author.'
+        Nova.error?.(msg) ?? window.alert(msg)
+    }
+}
+
+function applyAuthorBlockFlag(author, value) {
+    messages.value = messages.value.map((m) =>
+        m.author && m.author.type === author.type && String(m.author.id) === String(author.id)
+            ? { ...m, author: { ...m.author, is_blocked: value } }
+            : m,
+    )
 }
 
 onMounted(() => {
