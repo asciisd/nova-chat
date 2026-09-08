@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Earlier history (`v0.1.x`) is reconstructed from git tags and commits.
 
+## [Unreleased]
+
+### Fixed
+
+- A reply sent from the Nova composer could render **twice** while only one
+  row existed in the database. The conversation pane has two paths that add
+  messages to the list, and only one of them deduped: `pollDelta()` filtered
+  incoming messages against what was already on screen, while `onSent()`
+  pushed the POST response unconditionally. The message row is committed
+  server-side before the response reaches the browser, so a poll firing
+  inside that window rendered the message, and the POST response then
+  rendered it again — two bubbles sharing one `:key`, one database row.
+
+  Both paths now go through a single `appendMessages()` helper, so whichever
+  arrives second is discarded. Hosts whose message-creation side effects run
+  synchronously in-request (observers that transition status, stamp SLA
+  fields, or dispatch notifications) hit this most often, because a slower
+  POST response widens the window the poll can land in.
+
 ## [1.0.2] — 2026-05-12
 
 ### Changed

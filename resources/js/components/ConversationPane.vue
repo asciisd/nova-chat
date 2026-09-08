@@ -81,11 +81,8 @@ async function pollDelta() {
         )
         const fresh = data.data || []
         if (fresh.length) {
-            const known = new Set(messages.value.map((m) => m.id))
-            const adds = fresh.filter((m) => !known.has(m.id))
+            const adds = appendMessages(fresh)
             if (adds.length) {
-                messages.value = [...messages.value, ...adds]
-                lastSeenId = messages.value[messages.value.length - 1].id
                 await nextTick()
                 scrollToBottom()
                 if (adds.some((m) => !m.is_from_admin)) await markRead()
@@ -119,9 +116,32 @@ async function loadHeader() {
     } catch (_) {}
 }
 
+/**
+ * Append messages we have not already rendered, newest last, and advance the
+ * poll watermark.
+ *
+ * Both the poll and the composer feed the same list, and the composer's own
+ * POST races the poll: the row is committed server-side before the response
+ * reaches us, so a poll firing in that window renders the message, and the
+ * POST response would then render it a second time. Sharing one append path
+ * is what stops the two from disagreeing about what is already on screen.
+ *
+ * Returns the messages actually added.
+ */
+function appendMessages(incoming) {
+    const known = new Set(messages.value.map((m) => m.id))
+    const adds = incoming.filter((m) => !known.has(m.id))
+
+    if (adds.length) {
+        messages.value = [...messages.value, ...adds]
+        lastSeenId = messages.value[messages.value.length - 1].id
+    }
+
+    return adds
+}
+
 function onSent(message) {
-    messages.value.push(message)
-    lastSeenId = message.id
+    appendMessages([message])
     nextTick(scrollToBottom)
 }
 
